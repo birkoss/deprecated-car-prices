@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from .managers import UserManager
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(PermissionsMixin, AbstractBaseUser):
     email = models.EmailField(
         verbose_name='email address',
         max_length=255,
