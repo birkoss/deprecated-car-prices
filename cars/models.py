@@ -3,6 +3,58 @@ from django.db import models
 from config.helpers import slugify_model
 
 
+class PaymentTerm(models.Model):
+    payment = models.ForeignKey(
+        'Payment',
+        on_delete=models.PROTECT,
+        null=True
+    )
+
+    term = models.IntegerField()
+    rate = models.FloatField()
+    discount = models.FloatField()
+    residual = models.FloatField()
+
+
+class Payment(models.Model):
+    payment_type = models.ForeignKey(
+        'PaymentType',
+        on_delete=models.PROTECT,
+        null=True
+    )
+
+    trim = models.ForeignKey(
+        'Trim',
+        on_delete=models.PROTECT,
+        null=True
+    )
+
+    msrp = models.FloatField()
+    delivery = models.FloatField()
+    taxes = models.FloatField()
+    discount = models.FloatField()
+
+    date_added = models.DateTimeField(auto_now=True)
+
+    # Only ONE payment per PaymentType can be pending at anytime
+    is_pending = models.BooleanField(default=True)
+
+    is_valid = models.BooleanField(default=False)
+
+
+class PaymentType(models.Model):
+    name = models.CharField(max_length=255, default='')
+    slug = models.SlugField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug.strip():
+            self.slug = slugify_model(PaymentType, self.__str__())
+        super(PaymentType, self).save()
+
+
 class Trim(models.Model):
     model = models.ForeignKey(
         'Model',
@@ -28,8 +80,6 @@ class Trim(models.Model):
         if not self.slug.strip():
             self.slug = slugify_model(Trim, self.__str__())
         super(Trim, self).save()
-
-        return incentives
 
 
 class Model(models.Model):
