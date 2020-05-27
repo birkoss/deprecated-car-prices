@@ -27,3 +27,17 @@ class PaymentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.PaymentType
         fields = ('id', 'name', 'slug')
+
+
+class TrimReadSerializer(serializers.ModelSerializer):
+    model = ModelReadSerializer()
+
+    class Meta:
+        model = api_models.Trim
+        fields = ('id', 'name', 'slug', 'nice_name', 'model')
+
+
+class TrimWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.Trim
+        fields = ('name', 'nice_name')
