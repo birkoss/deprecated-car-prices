@@ -9,12 +9,18 @@ class MakeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug')
 
 
-class ModelSerializer(serializers.ModelSerializer):
+class ModelReadSerializer(serializers.ModelSerializer):
     make = MakeSerializer()
 
     class Meta:
         model = api_models.Model
         fields = ('id', 'name', 'slug', 'year', 'make')
+
+
+class ModelWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.Model
+        fields = ('name', 'year')
 
 
 class PaymentTypeSerializer(serializers.ModelSerializer):
