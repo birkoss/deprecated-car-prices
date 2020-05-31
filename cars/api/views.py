@@ -9,6 +9,55 @@ from cars import models as api_models
 from . import serializers as api_serializers
 
 
+class NoCreateViewSet(viewsets.ModelViewSet):
+    """
+    Disable the Create method (POST) and
+    show a specific message
+    """
+    response_no_create = "This method is NOT available"
+
+    def create(self, request):
+        response = {
+            'detail': self.response_no_create
+        }
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class NoPartialUpdateViewSet(viewsets.ModelViewSet):
+    """
+    Disable the Partial Update method (PATCH) and
+    show a specific message
+    """
+    response_no_partial_update = "This method is NOT available. Use PUT instead"
+
+    def partial_update(self, request, pk):
+        response = {
+            'detail': self.response_no_partial_update
+        }
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateReadWriteViewSet(viewsets.ModelViewSet):
+    """
+    Used to allow update using a specific Write Serializer and 
+    return the instance using a specific Read Serializer
+    """
+    read_serializer_class = None
+    write_serializer_class = None
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update using a WriteSerializer and return a ReadSerializer
+        """
+        instance = self.get_object()
+
+        serializer = self.write_serializer_class(instance, data=request.data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(self.read_serializer_class(instance).data)
+
+
 class MakeViewSet(viewsets.ModelViewSet):
     """
     Makes list
@@ -52,7 +101,7 @@ class MakeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
 
-class ModelViewSet(viewsets.ModelViewSet):
+class ModelViewSet(NoCreateViewSet, NoPartialUpdateViewSet, UpdateReadWriteViewSet, viewsets.ModelViewSet):
     """
     Models list
     """
@@ -60,25 +109,11 @@ class ModelViewSet(viewsets.ModelViewSet):
     serializer_class = api_serializers.ModelReadSerializer
     permission_classes = [IsAuthenticated]
 
-    def create(self, request):
-        response = {
-            'detail': 'Use /api/makes/{id}/models/ to create a model'
-        }
-        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    response_no_create = 'Use /api/makes/{id}/models/ to create a model'
+    response_no_partial_update = 'Use PUT to edit a model'
 
-    def partial_update(self, request, pk):
-        response = {
-            'detail': 'Use PUT to edit a model'
-        }
-        return Response(response, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=False)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        return Response(self.serializer_class(instance).data)
+    read_serializer_class = serializer_class
+    write_serializer_class = api_serializers.ModelWriteSerializer
 
     @action(detail=True, methods=['GET', 'POST'], name='Trims')
     def trims(self, request, pk):
@@ -116,12 +151,6 @@ class ModelViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
 
-    def get_serializer_class(self):
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update':
-            return api_serializers.ModelWriteSerializer
-        return self.serializer_class
-
-
 class PaymentTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Payment Types list
@@ -129,3 +158,18 @@ class PaymentTypeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = api_models.PaymentType.objects.all()
     serializer_class = api_serializers.PaymentTypeSerializer
     permission_classes = [IsAuthenticated]
+
+
+class TrimViewSet(NoCreateViewSet, NoPartialUpdateViewSet, UpdateReadWriteViewSet, viewsets.ModelViewSet):
+    """
+    Trims list
+    """
+    queryset = api_models.Trim.objects.all()
+    serializer_class = api_serializers.TrimReadSerializer
+    permission_classes = [IsAuthenticated]
+
+    response_no_create = 'Use /api/models/{id}/trims/ to create a trim'
+    response_no_partial_update = 'Use PUT to edit a trim'
+
+    read_serializer_class = serializer_class
+    write_serializer_class = api_serializers.ModelWriteSerializer
